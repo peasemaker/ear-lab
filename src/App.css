@@ -1,0 +1,141 @@
+.app-shell { max-width: 1280px; padding: 0 56px; margin: 0 auto; }
+.site-header { display: flex; align-items: center; height: 98px; border-bottom: 1px solid #e6e7ec; gap: 24px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 28px; letter-spacing: -1.3px; }
+.brand-light { font-weight: 500; }
+.brand-period { color: #8a79cb; }
+.brand-mark { width: 27px; height: 28px; display: flex; align-items: center; gap: 3px; transform: rotate(-10deg); }
+.brand-mark i { display: block; width: 4px; border-radius: 5px; background: #7666b6; }
+.brand-mark i:nth-child(1) { height: 12px; }.brand-mark i:nth-child(2) { height: 25px; }.brand-mark i:nth-child(3) { height: 19px; }.brand-mark i:nth-child(4) { height: 9px; }
+.header-divider { width: 1px; height: 23px; background: #dedfe6; }
+.header-caption { font-size: 12px; color: #85848e; }
+.header-tag { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #777581; }
+.header-tag > span { width: 6px; height: 6px; background: #9b8ac6; border-radius: 50%; }
+.page-intro { display: flex; align-items: center; justify-content: space-between; padding: 47px 0 43px; gap: 24px; }
+.intro-eyebrow { display: flex; align-items: center; gap: 9px; font-size: 9px; letter-spacing: 1.8px; font-weight: 750; color: #89818f; margin-bottom: 16px; }
+.intro-line { height: 1px; width: 22px; background: #9d90bc; }
+h1 { font-size: clamp(32px, 3.2vw, 43px); font-weight: 650; letter-spacing: -1.65px; line-height: 1.28; }
+h1 > span { color: #8b7bb4; }
+.page-intro p { color: #85828e; font-size: 12px; margin-top: 16px; line-height: 1.8; }
+.piano-art { width: 260px; height: 180px; position: relative; margin: 8px 32px 0 0; flex-shrink: 0; }
+.piano { position: absolute; left: 21px; top: 36px; width: 228px; height: 111px; border-radius: 8px; padding: 8px 8px 10px; background: #373345; transform: rotate(-10deg); box-shadow: 0 8px 0 #c2bacd, 0 18px 35px #5e477018; }
+.piano-white-keys { height: 100%; display: flex; gap: 3px; }
+.piano-white-keys > span { width: 12.5%; border-radius: 2px 2px 4px 4px; background: #fffcf6; box-shadow: inset 0 -5px #e9e5df; }
+.piano-white-keys > .piano-highlight { background: #d9ceee; box-shadow: inset 0 -5px #bdb0d5; }
+.piano-black-keys { position: absolute; left: 8px; right: 8px; top: 7px; }
+.piano-black-keys > span { position: absolute; width: 15px; height: 55px; border-radius: 0 0 3px 3px; background: #353142; box-shadow: inset 0 -4px #50495e, 2px 2px 2px #33333329; }
+.piano-sparkle { position: absolute; right: -5px; top: 0; color: #ab94c8; font-size: 29px; }
+.piano-note { position: absolute; left: 6px; top: 0; color: #b9a7ce; font-size: 30px; transform: rotate(-15deg); }
+.piano-caption { position: absolute; bottom: 0; left: 60px; color: #a49baa; font-size: 8px; letter-spacing: 1.7px; }
+.exercise-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 19px; gap: 12px; }
+.exercise-bar > div:first-child { display: flex; align-items: center; gap: 12px; }
+.exercise-number { font-size: 11px; color: #9b8fb8; font-weight: 700; }
+.exercise-bar h2 { font-size: 17px; letter-spacing: -.4px; font-weight: 750; }
+.mode-badge { font-size: 9px; color: #89808f; background: #eeebf2; padding: 5px 9px; border-radius: 5px; margin-left: 3px; }
+.session-score { display: flex; align-items: center; font-size: 10px; gap: 7px; color: #8b8692; }
+.session-score strong { font-size: 12px; color: #575060; font-weight: 750; margin-left: 6px; }
+.session-score strong > span { color: #aba6b0; font-weight: 500; }
+.score-dot { width: 5px; height: 5px; border-radius: 50%; background: #9a88bb; }
+.trainer-layout { display: grid; grid-template-columns: 288px minmax(0, 1fr); align-items: stretch; gap: 22px; }
+.card { background: #fff; border: 1px solid #e7e6ed; border-radius: 15px; }
+.settings-panel { padding: 26px 23px 23px; display: flex; flex-direction: column; }
+.section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.eyebrow { font-size: 8px; letter-spacing: 1.6px; color: #9a91a4; font-weight: 750; }
+.small-dot { width: 5px; height: 5px; border-radius: 50%; background: #d7cfe3; }
+.settings-panel h2 { font-size: 14px; font-weight: 750; letter-spacing: -.3px; }
+.setting-field { margin-top: 29px; }
+.setting-field label, .degrees-field legend { font-size: 11px; font-weight: 750; color: #605969; }
+.select-wrap { position: relative; margin-top: 10px; }
+.select-wrap select { width: 100%; appearance: none; border: 1px solid #e4e0eb; border-radius: 8px; padding: 12px 35px 12px 12px; color: #4e455d; background: #faf9fc; font-size: 12px; cursor: pointer; }
+.select-wrap svg { position: absolute; pointer-events: none; right: 12px; top: 15px; color: #8d839b; }
+.field-hint { margin-top: 10px; color: #9a94a1; font-size: 10px; line-height: 1.8; }
+.degrees-field { border: 0; border-top: 1px solid #efedf3; margin: 25px 0 0; padding: 24px 0 0; min-width: 0; }
+.degrees-field legend { float: left; width: 100%; margin-bottom: 12px; padding: 0; }
+.degree-toggles { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; clear: both; }
+.degree-toggle { border: 1px solid #e7e3ed; background: #fff; color: #aaa3b3; padding: 0; height: 36px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.degree-toggle.is-active { background: #f0ebf8; border-color: #ded5ef; color: #776097; }
+.degree-toggle:hover { border-color: #9b86ba; }
+.degrees-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; font-size: 9px; color: #a099a9; }
+.text-button { background: none; padding: 4px 0; border: 0; color: #8a70ac; font-size: 9px; font-weight: 650; }
+.text-button:disabled { color: #a29aa9; }
+.text-button:not(:disabled):hover { color: #5c3d86; }
+.instrument { display: flex; align-items: center; gap: 10px; border-top: 1px solid #efedf3; padding-top: 23px; margin-top: 23px; }
+.instrument-icon { width: 35px; height: 35px; border-radius: 8px; background: #f4f2f7; color: #9b8cab; display: grid; place-items: center; }
+.instrument > div { display: flex; flex-direction: column; gap: 3px; }
+.instrument-name { font-size: 11px; font-weight: 700; color: #6d6279; }
+.instrument-detail { font-size: 8px; color: #a49aaa; }
+.instrument-dot { width: 5px; height: 5px; border-radius: 50%; background: #9baa91; margin-left: auto; }
+.settings-note { margin-top: auto; padding-top: 30px; display: flex; gap: 10px; color: #a99fb5; align-items: center; }
+.settings-note p { font-size: 10px; line-height: 1.8; }
+.training-area { display: grid; gap: 17px; }
+.listening-panel { overflow: hidden; position: relative; background: #302b40; color: #fff; border-radius: 15px; padding: 21px 26px 18px; text-align: center; }
+.listening-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; gap: 10px; }
+.panel-label { display: inline-flex; align-items: center; gap: 7px; font-size: 8px; letter-spacing: 1.3px; color: #b3a8c6; font-weight: 650; }
+.live-dot { width: 4px; height: 4px; background: #baabd2; border-radius: 50%; }
+.key-badge { color: #d9d0e6; background: #ffffff08; border: 1px solid #ffffff16; padding: 4px 9px; border-radius: 6px; font-size: 9px; }
+.sound-visual { position: relative; width: 290px; height: 105px; margin: 10px auto 5px; display: grid; place-items: center; }
+.sound-orbit { position: absolute; border: 1px solid #c5a9ed0a; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.orbit-one { width: 205px; height: 205px; }.orbit-two { width: 280px; height: 280px; }
+.waveform { display: flex; align-items: center; justify-content: center; gap: 5px; height: 100px; transform: scaleY(.62); }
+.waveform span { display: block; width: 4px; border-radius: 5px; background: #bda4de; opacity: .7; }
+.waveform span:nth-child(3n) { background: #dac9ed; opacity: .9; }
+.is-playing .waveform span { animation: wave .7s ease-in-out infinite alternate; }
+@keyframes wave { from { transform: scaleY(.3); opacity: .4; } to { transform: scaleY(1.2); opacity: 1; } }
+.listening-copy { position: relative; }
+.listening-copy h2 { font-size: 18px; font-weight: 550; letter-spacing: -.55px; }
+.listening-copy p { margin-top: 7px; color: #aea3be; font-size: 10px; }
+.listen-actions { display: flex; align-items: center; justify-content: center; gap: 23px; margin-top: 23px; position: relative; }
+.button { display: inline-flex; justify-content: center; align-items: center; gap: 9px; min-height: 44px; border-radius: 8px; border: 0; padding: 12px 20px; font-size: 11px; font-weight: 750; }
+.button-primary { background: #e8dfac; color: #403a2c; min-width: 185px; box-shadow: 0 3px 0 #0000000b; }
+.button-primary:not(:disabled):hover { background: #f5ebbc; }
+.button-primary:disabled { opacity: .6; }
+.replay-button { display: inline-flex; align-items: center; gap: 7px; background: none; color: #bdb0ce; border: 0; padding: 10px 0; min-height: 44px; }
+.replay-button:disabled { opacity: .4; }.replay-button:not(:disabled):hover { color: #fff; }
+.sound-sequence { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 18px; color: #9686ab; font-size: 8px; position: relative; }
+.sound-sequence .sequence-active { color: #e9dfad; }
+.sequence-line { width: 29px; height: 1px; background: #ffffff17; }
+.answer-panel { padding: 23px 25px 21px; }
+.answer-heading { display: flex; align-items: center; justify-content: space-between; }
+.answer-heading h2 { font-size: 14px; font-weight: 750; letter-spacing: -.3px; }
+.answer-heading p { margin-top: 5px; font-size: 10px; color: #9c94a5; }
+.step-badge { font-size: 9px; color: #a59caf; border: 1px solid #ece8f1; border-radius: 5px; padding: 3px 7px; }
+.answer-buttons { display: grid; grid-template-columns: repeat(7, 1fr); gap: 9px; margin-top: 20px; }
+.answer-key { position: relative; min-height: 68px; border-radius: 8px; border: 1px solid #e3dfe9; background: #fcfbfe; color: #655870; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; box-shadow: 0 3px 0 #eeebf2; }
+.answer-key > span { font-size: 21px; font-weight: 600; }
+.answer-key > small { font-size: 8px; color: #b3a9bf; }
+.answer-key:disabled { color: #a299ae; background: #fbfafc; }
+.answer-key.is-unavailable { opacity: .35; background: #f4f2f5; box-shadow: none; }
+.answer-key:not(:disabled):hover { background: #f3edf9; border-color: #b7a2cf; transform: translateY(-2px); }
+.answer-key.is-selected { color: #79539f; background: #ede4f6; border-color: #a98bc6; box-shadow: 0 3px 0 #d6c5e5; }
+.answer-key.is-correct { background: #edf5ed; border-color: #92b799; color: #4c7957; box-shadow: 0 3px 0 #d6e6d8; }
+.answer-key.is-wrong { background: #fbefec; border-color: #dcb1a6; color: #b57563; box-shadow: 0 3px 0 #f0ddd6; }
+.answer-key > svg { position: absolute; right: 5px; top: 5px; }
+.answer-bottom { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 24px; padding-top: 18px; border-top: 1px solid #efecf3; }
+.answer-message { font-size: 9px; color: #9b92a5; display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.answer-message strong { font-size: 10px; font-weight: 650; }.answer-message p { line-height: 1.7; }
+.feedback-icon { width: 27px; height: 27px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: #edf5ed; }
+.message-success { color: #66836a; }.message-incorrect { color: #9b7c6e; }.message-incorrect .feedback-icon { background: #fbf2eb; }
+.answer-message .audio-error { color: #a65e51; }
+.button-check { background: #8a73a8; color: #fff; min-width: 122px; flex-shrink: 0; }
+.button-check:not(:disabled):hover { background: #755b94; }.button-check:disabled { color: #b4a8c2; background: #f0ecf5; }
+.practice-tip { display: flex; align-items: center; gap: 13px; background: #f0edf5; border: 1px solid #e9e4f0; border-radius: 10px; margin-top: 24px; padding: 17px 20px; }
+.tip-icon { color: #a28dbb; display: flex; }.practice-tip p { font-size: 10px; color: #9a8ca7; line-height: 1.8; }.practice-tip strong { color: #786a87; font-weight: 650; }.tip-decoration { margin-left: auto; color: #b5a7c7; font-size: 24px; line-height: 1; }
+footer { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 27px 0; font-size: 9px; color: #b3aab9; } footer > span:first-child { color: #8c8198; }.footer-separator { margin: 0 10px; color: #d2cbd9; }
+
+@media (min-width: 1440px) {
+  .app-shell { padding: 0 44px; }.page-intro { padding-top: 55px; padding-bottom: 49px; }
+}
+@media (max-width: 1050px) {
+  .app-shell { padding: 0 32px; }.trainer-layout { grid-template-columns: 260px minmax(0, 1fr); gap: 17px; }.settings-panel { padding: 24px 19px; }.answer-panel { padding: 22px 20px; }.answer-buttons { gap: 7px; }.answer-bottom { flex-wrap: wrap; gap: 10px; }.answer-message { flex: 1; min-width: 175px; }.piano-art { margin-right: 0; width: 245px; }.header-tag { font-size: 10px; }
+}
+@media (max-width: 760px) {
+  .app-shell { padding: 0 24px; }.site-header { height: 78px; gap: 18px; }.brand { font-size: 26px; }.header-caption { font-size: 10px; }.header-tag { display: none; }.page-intro { padding: 35px 0 32px; }.intro-eyebrow { font-size: 8px; letter-spacing: 1.2px; }h1 { font-size: 34px; }.page-intro p { max-width: 340px; font-size: 11px; }.piano-art { width: 170px; height: 140px; margin-right: 5px; }.piano { transform: rotate(-10deg) scale(.68); transform-origin: left top; top: 35px; left: 6px; }.piano-sparkle { font-size: 21px; right: 0; }.piano-note { font-size: 23px; left: 0; top: 10px; }.piano-caption { left: 13px; bottom: 13px; font-size: 6px; letter-spacing: 1.2px; }.trainer-layout { grid-template-columns: 1fr; }.settings-panel { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; padding: 22px; }.settings-panel .section-heading { grid-column: 1 / -1; }.settings-panel h2 { grid-column: 1 / -1; }.setting-field { margin-top: 21px; }.degrees-field { margin-top: 21px; border: 0; padding: 0; }.instrument, .settings-note { display: none; }.degrees-field .field-hint { font-size: 9px; }.degree-toggle { height: 42px; }.training-area { gap: 17px; }.listening-panel { padding: 22px 26px; }.sound-visual { margin-top: 15px; height: 100px; }.listening-copy h2 { font-size: 20px; }.listening-copy p { font-size: 11px; }.answer-panel { padding: 24px; }.answer-key { min-height: 74px; }.practice-tip p { font-size: 9px; }footer > span:last-child { display: none; }
+}
+@media (max-width: 540px) {
+  .piano-art { display: none; }.page-intro p { max-width: 100%; }.page-intro h1 { font-size: 35px; }.exercise-bar h2 { font-size: 15px; }.mode-badge { display: none; }.settings-panel { grid-template-columns: 1fr; }.degrees-field { margin-top: 20px; padding-top: 20px; border-top: 1px solid #efedf3; }.degree-toggle { height: 40px; }.settings-panel { padding: 22px; }.settings-panel .field-hint { font-size: 10px; }
+}
+@media (max-width: 400px) {
+  .app-shell { padding: 0 17px; }.header-divider, .header-caption { display: none; }.page-intro h1 { font-size: 32px; }.intro-eyebrow { font-size: 7px; letter-spacing: 1px; }.listening-panel { padding: 21px 17px; }.panel-label { font-size: 7px; letter-spacing: .8px; }.sound-visual { width: 260px; }.listening-copy h2 { font-size: 17px; }.listening-copy p { font-size: 9px; }.listen-actions { gap: 14px; }.button-primary { min-width: 155px; padding: 12px 10px; font-size: 9px; }.replay-button { font-size: 9px; gap: 5px; }
+}
+@media (max-width: 540px) {
+  .answer-panel { padding: 21px 17px; }.answer-heading h2 { font-size: 14px; }.answer-heading p { font-size: 10px; }.answer-buttons { gap: 6px; margin-top: 18px; }.answer-key { min-height: 65px; border-radius: 6px; }.answer-key > span { font-size: 20px; }.answer-key > small { font-size: 7px; }.answer-key > svg { width: 10px; height: 10px; top: 3px; right: 3px; }.answer-bottom { margin-top: 21px; flex-direction: column; align-items: stretch; gap: 12px; }.answer-message { font-size: 10px; min-height: 33px; }.answer-message strong { font-size: 11px; }.button-check { min-height: 45px; }.practice-tip { padding: 15px; gap: 11px; margin-top: 18px; align-items: flex-start; }.tip-icon { margin-top: 2px; }.practice-tip strong { display: block; }.tip-decoration { display: none; }footer { padding: 23px 0; font-size: 8px; }
+}
