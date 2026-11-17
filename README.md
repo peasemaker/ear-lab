@@ -43,6 +43,31 @@ npm run preview     # локальный просмотр production-сборк�
 
 Тесты проверяют интервалы во всех тональностях, диезы/бемоли и переход через октаву, выбор из доступных ступеней, защиту от повторного зачёта и отмену воспроизведения. Реальное качество звука и поведение конкретного мобильного браузера проверяются вручную.
 
+## Публикация на GitHub Pages
+
+Репозиторий: [peasemaker/ear-lab](https://github.com/peasemaker/ear-lab).
+Ожидаемый адрес после успешной публикации: **https://peasemaker.github.io/ear-lab/**.
+
+1. Откройте [Settings → Pages](https://github.com/peasemaker/ear-lab/settings/pages).
+2. В `Build and deployment → Source` выберите **GitHub Actions**.
+3. Закоммитьте `.github/workflows/deploy.yml` и обновлённый `README.md`, затем отправьте изменения в ветку `main`.
+4. Во вкладке [Actions](https://github.com/peasemaker/ear-lab/actions) дождитесь успешного завершения **Deploy Ear Lab to GitHub Pages**. Ссылка на сайт появится в результате deployment и в настройках Pages.
+
+Workflow автоматически запускает `npm ci`, тесты, сборку и публикацию `dist` при каждом push в `main`. Также его можно запустить вручную через `Actions → Deploy Ear Lab to GitHub Pages → Run workflow`. Личные токены и ветка `gh-pages` не нужны; используются стандартные разрешения `GITHUB_TOKEN`. Папки `node_modules` и `dist` в репозиторий не добавляются.
+
+Базовый путь сборки берётся из метаданных GitHub Pages через `actions/configure-pages`: `/ear-lab/` для стандартного адреса, `/` для собственного домена. Локальная разработка сохраняет путь `/`, менять `vite.config.ts` не требуется.
+
+Проверить сборку под стандартный адрес локально можно так:
+
+```bash
+npm run build -- --base=/ear-lab/
+npm run preview -- --base=/ear-lab/
+```
+
+Откройте `http://localhost:4173/ear-lab/` или адрес с портом из терминала.
+
+Для собственного домена укажите его в `Settings → Pages → Custom domain`, настройте DNS у регистратора по [инструкции GitHub](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site) и включите `Enforce HTTPS`, когда опция станет доступна. После подключения домена повторно запустите workflow, чтобы пересобрать сайт с новым базовым путём. При публикации через этот workflow файл `CNAME` не требуется.
+
 ## Архитектура
 
 ```text
