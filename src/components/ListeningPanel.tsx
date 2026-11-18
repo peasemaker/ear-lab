@@ -2,6 +2,7 @@ import type { AudioPhase } from '../audio/piano'
 import type { Session } from '../music/session'
 import { Icon } from './Icon'
 import { ListenButton } from './ListenButton'
+import { SoundVisual } from './SoundVisual'
 
 interface Props {
   session: Session
@@ -16,7 +17,6 @@ interface Props {
   onStopBackground: () => void
 }
 
-const WAVE_HEIGHTS = [12, 21, 15, 30, 44, 25, 53, 70, 43, 61, 84, 57, 97, 74, 110, 81, 60, 94, 68, 48, 73, 51, 32, 54, 37, 24, 33, 16, 22, 12]
 
 export function ListeningPanel({ session, audioPhase, keySymbol, backgroundOn, instrumentLoading, onListen, onPrepare, onListenHeld, onReleaseHeld, onStopBackground }: Props) {
   const playing = session.phase === 'playing'
@@ -28,7 +28,7 @@ export function ListeningPanel({ session, audioPhase, keySymbol, backgroundOn, i
 
   return <section className={`listening-panel ${playing ? 'is-playing' : ''}`} aria-labelledby="listening-title" aria-busy={playing || instrumentLoading}>
     <div className="listening-top"><span className="panel-label"><span className="live-dot" /> СЛУШАЙТЕ И ЧУВСТВУЙТЕ</span><span className="key-badge">{keySymbol} major</span></div>
-    <div className="sound-visual" aria-hidden="true"><div className="sound-orbit orbit-one" /><div className="sound-orbit orbit-two" /><div className="waveform">{WAVE_HEIGHTS.map((height, i) => <span key={i} style={{ height: `${height}px`, animationDelay: `${i * -0.07}s` }} />)}</div></div>
+    <SoundVisual />
     <div className="listening-copy"><h2 id="listening-title" aria-live="polite">{status}</h2><p>Тоника звучит на фоне, ступень — поверх неё.</p></div>
     <div className="listen-actions">
       <ListenButton className="button button-primary" disabled={playing || instrumentLoading} describedBy="listen-hint" onPrepare={onPrepare} onTap={onListen} onHold={onListenHeld} onRelease={onReleaseHeld}><Icon name={playing ? 'play' : actionIcon} size={16} />{label}</ListenButton>

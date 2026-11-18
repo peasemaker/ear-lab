@@ -13,6 +13,12 @@ export class PianoSamplesError extends Error {
 
 type TargetInstrument = Tone.PolySynth<Tone.Synth> | Tone.Sampler
 
+export interface SequenceEvent {
+  notes: readonly string[]
+  duration: number
+  intervalMs: number
+}
+
 /** Owns Web Audio only. No React or music theory dependencies. */
 export class PianoEngine {
   private synth: Tone.PolySynth<Tone.Synth> | null = null
@@ -29,7 +35,7 @@ export class PianoEngine {
   private generation = 0
   private finish: ((completed: boolean) => void) | null = null
   private holding = false
-  private heldNote: string | null = null
+  private heldNote: string | string[] | null = null
   private heldInstrument: TargetInstrument | null = null
 
   unlock(): Promise<void> {
@@ -75,6 +81,7 @@ export class PianoEngine {
     try {
       sampler = new Tone.Sampler({
         urls: {
+          C2: 'C2.mp3', 'D#2': 'Ds2.mp3', 'F#2': 'Fs2.mp3', A2: 'A2.mp3',
           C3: 'C3.mp3', 'D#3': 'Ds3.mp3', 'F#3': 'Fs3.mp3', A3: 'A3.mp3',
           C4: 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3', A4: 'A4.mp3',
           C5: 'C5.mp3', 'D#5': 'Ds5.mp3', 'F#5': 'Fs5.mp3', A5: 'A5.mp3',
@@ -96,7 +103,7 @@ export class PianoEngine {
 
   async play(
     tonic: string,
-    target: string,
+    target: string | readonly string[],
     onPhase: (phase: AudioPhase) => void,
     mode: PlaybackMode = 'once',
     sound: InstrumentSound = 'ambient',
@@ -108,6 +115,10 @@ export class PianoEngine {
     // Must run from a click/keyboard gesture, including retries on mobile Safari.
     await Tone.start()
     if (generation !== this.generation) return false
+
+    const notes = typeof target === 'string' ? [target] : [...target]
+    const targetNotes = typeof target === 'string' ? target : notes
+    const velocity = 0.7 / Math.sqrt(notes.length)
 
     await this.prepareAmbience()
     if (generation !== this.generation) return false
@@ -123,6 +134,33 @@ export class PianoEngine {
     // request made while the browser was unlocking the audio context.
     if (backgroundRevision === this.backgroundRevision) this.startBackground(tonic)
 
+    const instrument = this.targetInstrument(sound)
+    this.tuneTargetFilter(sound, notes)
+
+    return new Promise<boolean>((resolve) => {
+      this.finish = resolve
+      if (mode === 'hold') {
+        this.heldNote = targetNotes
+        this.heldInstrument = instrument
+        instrument.triggerAttack(targetNotes, Tone.now(), velocity)
+        onPhase('target')
+        return
+      }
+      onPhase('tonic')
+      this.timers.push(setTimeout(() => {
+        onPhase('target')
+        instrument.triggerAttackRelease(targetNotes, 1, Tone.now(), velocity)
+      }, 700))
+      // Wait for the held note, release tail and Web Audio lookahead.
+      this.timers.push(setTimeout(() => {
+        this.timers = []
+        this.finish = null
+        resolve(true)
+      }, 2300))
+    })
+  }
+
+  private targetInstrument(sound: InstrumentSound): TargetInstrument {
     if (sound === 'ambient' && !this.synth) {
       this.targetFilter ??= new Tone.Filter({
         frequency: 1200,
@@ -137,35 +175,14 @@ export class PianoEngine {
         volume: -6,
       }).connect(this.targetFilter)
     }
-    if (sound === 'ambient') {
-      // Follow the fundamental so high notes remain audible while their
-      // piercing upper harmonics are softened throughout the held note.
-      const cutoff = Math.max(500, Math.min(3000, Tone.Frequency(target).toFrequency() * 1.6))
-      this.targetFilter!.frequency.setValueAtTime(cutoff, Tone.now())
-    }
-    const instrument: TargetInstrument = sound === 'piano' ? this.piano! : this.synth!
+    return sound === 'piano' ? this.piano! : this.synth!
+  }
 
-    return new Promise<boolean>((resolve) => {
-      this.finish = resolve
-      if (mode === 'hold') {
-        this.heldNote = target
-        this.heldInstrument = instrument
-        instrument.triggerAttack(target, Tone.now(), 0.7)
-        onPhase('target')
-        return
-      }
-      onPhase('tonic')
-      this.timers.push(setTimeout(() => {
-        onPhase('target')
-        instrument.triggerAttackRelease(target, 1, Tone.now(), 0.7)
-      }, 700))
-      // Wait for the held note, release tail and Web Audio lookahead.
-      this.timers.push(setTimeout(() => {
-        this.timers = []
-        this.finish = null
-        resolve(true)
-      }, 2300))
-    })
+  private tuneTargetFilter(sound: InstrumentSound, notes: readonly string[]): void {
+    if (sound !== 'ambient') return
+    const highestFrequency = Math.max(...notes.map((note) => Tone.Frequency(note).toFrequency()))
+    const cutoff = Math.max(500, Math.min(3000, highestFrequency * 1.6))
+    this.targetFilter!.frequency.setValueAtTime(cutoff, Tone.now())
   }
 
   releaseHeldTarget(): void {
@@ -184,6 +201,44 @@ export class PianoEngine {
       this.finish?.(true)
       this.finish = null
     }, 600))
+  }
+
+  /** A fixed sequence with silent gaps; never starts a background drone. */
+  async playSequence(events: readonly (readonly string[] | SequenceEvent)[], onEvent: (index: number) => void, sound: InstrumentSound = 'ambient'): Promise<boolean> {
+    this.cancelPlayback()
+    this.stopBackground()
+    const generation = this.generation
+    await Tone.start()
+    if (generation !== this.generation) return false
+    try {
+      await this.prepareInstrument(sound)
+    } catch (error) {
+      if (generation !== this.generation) return false
+      throw error
+    }
+    if (generation !== this.generation) return false
+    const instrument = this.targetInstrument(sound)
+    return new Promise<boolean>((resolve) => {
+      this.finish = resolve
+      let offsetMs = 0
+      events.forEach((event, index) => {
+        const { notes: eventNotes, duration, intervalMs } = 'notes' in event ? event : { notes: event, duration: 1, intervalMs: 1500 }
+        const play = () => {
+          const notes = [...eventNotes]
+          this.tuneTargetFilter(sound, notes)
+          onEvent(index)
+          instrument.triggerAttackRelease(notes, duration, Tone.now(), 0.7 / Math.sqrt(notes.length))
+        }
+        if (index === 0) play()
+        else this.timers.push(setTimeout(play, offsetMs))
+        offsetMs += intervalMs
+      })
+      this.timers.push(setTimeout(() => {
+        this.timers = []
+        this.finish = null
+        resolve(true)
+      }, offsetMs))
+    })
   }
 
   get isBackgroundPlaying(): boolean {
