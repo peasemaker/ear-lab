@@ -1,61 +1,402 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ start: vi.fn(), note: vi.fn(), release: vi.fn(), dispose: vi.fn() }))
+interface MockSamplerOptions {
+  onload: () => void
+  onerror: (error: Error) => void
+}
+
+const mocks = vi.hoisted(() => ({
+  start: vi.fn(), note: vi.fn(), attack: vi.fn(), targetRelease: vi.fn(), release: vi.fn(), dispose: vi.fn(),
+  backgroundAttack: vi.fn(), backgroundRelease: vi.fn(), backgroundRamp: vi.fn(), backgroundDispose: vi.fn(),
+  reverbReady: vi.fn(), reverbDispose: vi.fn(), filterDispose: vi.fn(),
+  filterToDestination: vi.fn(), filterFrequency: vi.fn(), synthConnect: vi.fn(),
+  samplerReady: vi.fn(), samplerCreate: vi.fn(), pianoNote: vi.fn(), pianoAttack: vi.fn(),
+  pianoRelease: vi.fn(), pianoReleaseAll: vi.fn(), pianoDispose: vi.fn(),
+}))
 vi.mock('tone', () => ({
   start: mocks.start,
   now: () => 0,
-  FMSynth: class {},
+  Frequency: () => ({ toFrequency: () => 440 }),
+  Sampler: class {
+    loaded = false
+    constructor(options: MockSamplerOptions) {
+      mocks.samplerCreate()
+      void Promise.resolve(mocks.samplerReady()).then(() => {
+        this.loaded = true
+        options.onload()
+      }, options.onerror)
+    }
+    toDestination() { return this }
+    triggerAttackRelease = mocks.pianoNote
+    triggerAttack = mocks.pianoAttack
+    triggerRelease = mocks.pianoRelease
+    releaseAll = mocks.pianoReleaseAll
+    dispose = mocks.pianoDispose
+  },
+  Reverb: class {
+    ready = Promise.resolve(mocks.reverbReady())
+    toDestination() { return this }
+    dispose = mocks.reverbDispose
+  },
+  Filter: class {
+    connect() { return this }
+    toDestination() { mocks.filterToDestination(); return this }
+    frequency = { setValueAtTime: mocks.filterFrequency }
+    dispose = mocks.filterDispose
+  },
+  Synth: class {
+    toDestination() { return this }
+    connect() { return this }
+    triggerAttack = mocks.backgroundAttack
+    triggerRelease = mocks.backgroundRelease
+    frequency = { rampTo: mocks.backgroundRamp }
+    dispose = mocks.backgroundDispose
+  },
   PolySynth: class {
     toDestination() { return this }
+    connect() { mocks.synthConnect(); return this }
     triggerAttackRelease = mocks.note
+    triggerAttack = mocks.attack
+    triggerRelease = mocks.targetRelease
     releaseAll = mocks.release
     dispose = mocks.dispose
   },
 }))
 
-import { PianoEngine } from './piano'
+import { PianoEngine, PianoSamplesError } from './piano'
 
-afterEach(() => { vi.useRealTimers(); vi.clearAllMocks() })
+afterEach(() => { vi.useRealTimers(); vi.resetAllMocks() })
 
-describe('piano playback', () => {
-  it('plays tonic then target with a gap and resolves after playback', async () => {
+describe('sampled piano', () => {
+  it('filters the ambient target while keeping the sampled piano on its dry path', async () => {
     vi.useFakeTimers()
     const engine = new PianoEngine()
-    const phase = vi.fn()
-    const playback = engine.play('C4', 'E4', phase)
-    await vi.advanceTimersByTimeAsync(0)
-    expect(mocks.note.mock.calls.map((call) => call[0])).toEqual(['C4'])
-    await vi.advanceTimersByTimeAsync(1200)
-    expect(mocks.note.mock.calls.map((call) => call[0])).toEqual(['C4', 'E4'])
-    expect(phase.mock.calls.map((call) => call[0])).toEqual(['tonic', 'gap', 'target'])
-    await vi.advanceTimersByTimeAsync(1150)
-    expect(await playback).toBe(true)
+    const ambient = engine.play('C3', 'E4', vi.fn())
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await ambient).toBe(true)
+    expect(mocks.synthConnect).toHaveBeenCalledTimes(1)
+    expect(mocks.filterToDestination).toHaveBeenCalledTimes(1)
+    expect(mocks.filterFrequency).toHaveBeenCalledTimes(1)
+    const piano = engine.play('C3', 'E4', vi.fn(), 'once', 'piano')
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await piano).toBe(true)
+    expect(mocks.pianoNote).toHaveBeenCalledTimes(1)
+    expect(mocks.filterFrequency).toHaveBeenCalledTimes(1)
+    engine.dispose()
+    expect(mocks.filterDispose).toHaveBeenCalledTimes(2)
+  })
+
+  it('loads samples only when selected and reuses them after switching sounds', async () => {
+    const engine = new PianoEngine()
+    await engine.prepareInstrument('ambient')
+    expect(mocks.samplerCreate).not.toHaveBeenCalled()
+    const first = engine.prepareInstrument('piano')
+    const second = engine.prepareInstrument('piano')
+    expect(second).toBe(first)
+    await first
+    expect(engine.isInstrumentReady('piano')).toBe(true)
+    await engine.prepareInstrument('ambient')
+    await engine.prepareInstrument('piano')
+    expect(mocks.samplerCreate).toHaveBeenCalledTimes(1)
     engine.dispose()
   })
 
-  it('cancels pending notes when the exercise changes', async () => {
+  it('plays a dry piano note and holds/releases the selected piano voice', async () => {
     vi.useFakeTimers()
     const engine = new PianoEngine()
-    const phase = vi.fn()
-    const playback = engine.play('C4', 'E4', phase)
+    const once = engine.play('C3', 'E4', vi.fn(), 'once', 'piano')
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await once).toBe(true)
+    expect(mocks.pianoNote).toHaveBeenCalledExactlyOnceWith('E4', 1, 0, 0.7)
+    expect(mocks.note).not.toHaveBeenCalled()
+    const held = engine.play('C3', 'G4', vi.fn(), 'hold', 'piano')
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(mocks.pianoAttack).toHaveBeenCalledExactlyOnceWith('G4', 0, 0.7)
+    expect(mocks.pianoRelease).not.toHaveBeenCalled()
+    engine.releaseHeldTarget()
+    await vi.advanceTimersByTimeAsync(600)
+    expect(await held).toBe(true)
+    expect(mocks.pianoRelease).toHaveBeenCalledExactlyOnceWith('G4', 0)
+    expect(mocks.backgroundAttack).toHaveBeenCalledTimes(1)
+    expect(mocks.samplerCreate).toHaveBeenCalledTimes(1)
+    engine.dispose()
+  })
+
+  it('reports a failed download and allows retry with a new sampler', async () => {
+    mocks.samplerReady.mockImplementationOnce(() => Promise.reject(new Error('Network unavailable')))
+    const engine = new PianoEngine()
+    await expect(engine.prepareInstrument('piano')).rejects.toBeInstanceOf(PianoSamplesError)
+    expect(engine.isInstrumentReady('piano')).toBe(false)
+    expect(mocks.pianoDispose).toHaveBeenCalledTimes(1)
+    await engine.prepareInstrument('piano')
+    expect(engine.isInstrumentReady('piano')).toBe(true)
+    expect(mocks.samplerCreate).toHaveBeenCalledTimes(2)
+    engine.dispose()
+  })
+
+  it('times out a stalled download and allows a retry', async () => {
+    vi.useFakeTimers()
+    mocks.samplerReady.mockImplementationOnce(() => new Promise<void>(() => {}))
+    const engine = new PianoEngine()
+    const failed = expect(engine.prepareInstrument('piano')).rejects.toBeInstanceOf(PianoSamplesError)
+    await vi.advanceTimersByTimeAsync(15000)
+    await failed
+    expect(engine.isInstrumentReady('piano')).toBe(false)
+    await engine.prepareInstrument('piano')
+    expect(engine.isInstrumentReady('piano')).toBe(true)
+    engine.dispose()
+  })
+
+  it('never starts an old piano question after switching back to ambient during loading', async () => {
+    vi.useFakeTimers()
+    let loaded!: () => void
+    mocks.samplerReady.mockImplementationOnce(() => new Promise<void>((resolve) => { loaded = resolve }))
+    const engine = new PianoEngine()
+    const old = engine.play('C3', 'E4', vi.fn(), 'hold', 'piano')
     await vi.advanceTimersByTimeAsync(0)
-    engine.stop()
-    await vi.advanceTimersByTimeAsync(3000)
+    engine.cancelPlayback()
+    const current = engine.play('C3', 'G4', vi.fn())
+    loaded()
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await old).toBe(false)
+    expect(await current).toBe(true)
+    expect(mocks.pianoAttack).not.toHaveBeenCalled()
+    expect(mocks.pianoNote).not.toHaveBeenCalled()
+    expect(mocks.note).toHaveBeenCalledExactlyOnceWith('G4', 1, 0, 0.7)
+    engine.dispose()
+  })
+
+  it('disposes a loading sampler and rejects preload without playing late notes', async () => {
+    let loaded!: () => void
+    mocks.samplerReady.mockImplementationOnce(() => new Promise<void>((resolve) => { loaded = resolve }))
+    const engine = new PianoEngine()
+    const rejected = expect(engine.prepareInstrument('piano')).rejects.toBeInstanceOf(PianoSamplesError)
+    engine.dispose()
+    loaded()
+    await rejected
+    expect(engine.isInstrumentReady('piano')).toBe(false)
+    expect(mocks.pianoDispose).toHaveBeenCalledTimes(1)
+    expect(mocks.pianoAttack).not.toHaveBeenCalled()
+  })
+})
+
+describe('piano playback with a continuous tonic', () => {
+  it('cancels first playback while reverb is preparing and disposes the effects', async () => {
+    vi.useFakeTimers()
+    let ready!: () => void
+    mocks.reverbReady.mockImplementationOnce(() => new Promise<void>((resolve) => { ready = resolve }))
+    const engine = new PianoEngine()
+    const playback = engine.play('C3', 'E4', vi.fn(), 'hold')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mocks.reverbReady).toHaveBeenCalledTimes(1)
+    engine.dispose()
+    ready()
     expect(await playback).toBe(false)
-    expect(mocks.note).toHaveBeenCalledTimes(1)
-    expect(phase).toHaveBeenCalledTimes(1)
+    expect(mocks.attack).not.toHaveBeenCalled()
+    expect(mocks.backgroundAttack).not.toHaveBeenCalled()
+    expect(mocks.reverbDispose).toHaveBeenCalledTimes(1)
+    expect(mocks.filterDispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds the target beyond the normal duration and releases it only on request', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const completed = vi.fn()
+    const playback = engine.play('C3', 'E4', vi.fn(), 'hold')
+    void playback.then(completed)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(mocks.attack).toHaveBeenCalledExactlyOnceWith('E4', 0, 0.7)
+    expect(mocks.note).not.toHaveBeenCalled()
+    expect(mocks.targetRelease).not.toHaveBeenCalled()
+    expect(completed).not.toHaveBeenCalled()
+    engine.releaseHeldTarget()
+    engine.releaseHeldTarget()
+    expect(mocks.targetRelease).toHaveBeenCalledExactlyOnceWith('E4', 0)
+    await vi.advanceTimersByTimeAsync(599)
+    expect(completed).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(await playback).toBe(true)
+    expect(engine.isBackgroundPlaying).toBe(true)
     engine.dispose()
   })
 
-  it('does not play if cancelled while the audio context is starting', async () => {
+  it('never starts a held target after release while the audio context is unlocking', async () => {
     let unlock!: () => void
     mocks.start.mockImplementationOnce(() => new Promise<void>((resolve) => { unlock = resolve }))
     const engine = new PianoEngine()
-    const playback = engine.play('C4', 'G4', vi.fn())
+    const playback = engine.play('C3', 'E4', vi.fn(), 'hold')
+    engine.releaseHeldTarget()
+    unlock()
+    expect(await playback).toBe(false)
+    expect(mocks.attack).not.toHaveBeenCalled()
+    expect(mocks.backgroundAttack).not.toHaveBeenCalled()
+    engine.dispose()
+  })
+
+  it('cancels a held target on settings changes and ignores late release during a normal question', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const held = engine.play('C3', 'E4', vi.fn(), 'hold')
+    await vi.advanceTimersByTimeAsync(0)
+    engine.cancelPlayback()
+    expect(await held).toBe(false)
+    const next = engine.play('D3', 'F#4', vi.fn())
+    await vi.advanceTimersByTimeAsync(0)
+    engine.releaseHeldTarget()
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await next).toBe(true)
+    expect(mocks.targetRelease).not.toHaveBeenCalled()
+    expect(mocks.note).toHaveBeenCalledExactlyOnceWith('F#4', 1, 0, 0.7)
+    engine.dispose()
+  })
+
+  it('keeps the target held when muting the background and cancels it on disposal', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const completed = vi.fn()
+    const held = engine.play('C3', 'E4', vi.fn(), 'hold')
+    void held.then(completed)
+    await vi.advanceTimersByTimeAsync(0)
+    engine.stopBackground()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(completed).not.toHaveBeenCalled()
+    expect(mocks.targetRelease).not.toHaveBeenCalled()
+    engine.dispose()
+    expect(await held).toBe(false)
+    expect(mocks.dispose).toHaveBeenCalledTimes(1)
+    expect(mocks.backgroundDispose).toHaveBeenCalledTimes(1)
+    expect(mocks.reverbDispose).toHaveBeenCalledTimes(1)
+    expect(mocks.filterDispose).toHaveBeenCalledTimes(2)
+  })
+
+  it('starts the tonic, plays the target over it and keeps the tonic after playback', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const phase = vi.fn()
+    const playback = engine.play('C2', 'E4', phase)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mocks.backgroundAttack).toHaveBeenCalledWith('C2', 0, 0.65)
+    expect(mocks.note).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(mocks.note).toHaveBeenCalledExactlyOnceWith('E4', 1, 0, 0.7)
+    expect(phase.mock.calls.map((call) => call[0])).toEqual(['tonic', 'target'])
+    const completed = vi.fn()
+    void playback.then(completed)
+    await vi.advanceTimersByTimeAsync(1400)
+    expect(completed).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(await playback).toBe(true)
+    expect(engine.isBackgroundPlaying).toBe(true)
+    expect(mocks.backgroundRelease).not.toHaveBeenCalled()
+    engine.dispose()
+  })
+
+  it('does not restart the background on repeat or the next question', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const first = engine.play('C2', 'E4', vi.fn())
+    await vi.advanceTimersByTimeAsync(2300)
+    await first
+    const next = engine.play('C2', 'G4', vi.fn())
+    await vi.advanceTimersByTimeAsync(2300)
+    await next
+    expect(mocks.backgroundAttack).toHaveBeenCalledTimes(1)
+    expect(mocks.backgroundRelease).not.toHaveBeenCalled()
+    expect(mocks.note.mock.calls.map((call) => call[0])).toEqual(['E4', 'G4'])
+    engine.dispose()
+  })
+
+  it('cancels pending target notes while preserving the background during settings changes', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const playback = engine.play('C2', 'E4', vi.fn())
+    await vi.advanceTimersByTimeAsync(0)
+    engine.cancelPlayback()
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(await playback).toBe(false)
+    expect(mocks.note).not.toHaveBeenCalled()
+    expect(engine.isBackgroundPlaying).toBe(true)
+    expect(mocks.backgroundRelease).not.toHaveBeenCalled()
+    engine.dispose()
+  })
+
+  it('retunes an active background without reattacking it and leaves a stopped background off', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const playback = engine.play('C2', 'E4', vi.fn())
+    await vi.advanceTimersByTimeAsync(0)
+    engine.cancelPlayback()
+    await playback
+    engine.retuneBackground('D2')
+    engine.retuneBackground('D2')
+    expect(mocks.backgroundRamp).toHaveBeenCalledExactlyOnceWith('D2', 0.15)
+    expect(mocks.backgroundAttack).toHaveBeenCalledTimes(1)
+    engine.stopBackground()
+    engine.retuneBackground('F2')
+    expect(mocks.backgroundRamp).toHaveBeenCalledTimes(1)
+    expect(engine.isBackgroundPlaying).toBe(false)
+    engine.dispose()
+  })
+
+  it('can mute the tonic during playback without cancelling the target, then restart it on listen', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const playback = engine.play('C2', 'E4', vi.fn())
+    await vi.advanceTimersByTimeAsync(0)
+    engine.stopBackground()
+    expect(engine.isBackgroundPlaying).toBe(false)
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await playback).toBe(true)
+    expect(mocks.note.mock.calls.map((call) => call[0])).toEqual(['E4'])
+    expect(engine.isBackgroundPlaying).toBe(false)
+    const next = engine.play('C2', 'G4', vi.fn())
+    await vi.advanceTimersByTimeAsync(2300)
+    await next
+    expect(engine.isBackgroundPlaying).toBe(true)
+    expect(mocks.backgroundAttack).toHaveBeenCalledTimes(2)
+    engine.dispose()
+  })
+
+  it('does not play anything if cancelled while the audio context is starting', async () => {
+    let unlock!: () => void
+    mocks.start.mockImplementationOnce(() => new Promise<void>((resolve) => { unlock = resolve }))
+    const engine = new PianoEngine()
+    const playback = engine.play('C2', 'G4', vi.fn())
     engine.stop()
     unlock()
     expect(await playback).toBe(false)
     expect(mocks.note).not.toHaveBeenCalled()
+    expect(mocks.backgroundAttack).not.toHaveBeenCalled()
     engine.dispose()
+  })
+
+  it('respects a background stop made while the audio context is starting', async () => {
+    vi.useFakeTimers()
+    let unlock!: () => void
+    mocks.start.mockImplementationOnce(() => new Promise<void>((resolve) => { unlock = resolve }))
+    const engine = new PianoEngine()
+    const playback = engine.play('C2', 'G4', vi.fn())
+    engine.stopBackground()
+    unlock()
+    await vi.advanceTimersByTimeAsync(2300)
+    expect(await playback).toBe(true)
+    expect(mocks.backgroundAttack).not.toHaveBeenCalled()
+    expect(mocks.note).toHaveBeenCalledTimes(1)
+    engine.dispose()
+  })
+
+  it('releases and disposes both voices and cancels pending notes on unmount', async () => {
+    vi.useFakeTimers()
+    const engine = new PianoEngine()
+    const playback = engine.play('C2', 'E4', vi.fn())
+    await vi.advanceTimersByTimeAsync(0)
+    engine.dispose()
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(await playback).toBe(false)
+    expect(engine.isBackgroundPlaying).toBe(false)
+    expect(mocks.backgroundRelease).toHaveBeenCalledTimes(1)
+    expect(mocks.backgroundDispose).toHaveBeenCalledTimes(1)
+    expect(mocks.dispose).toHaveBeenCalledTimes(1)
+    expect(mocks.note).not.toHaveBeenCalled()
   })
 })

@@ -7,12 +7,11 @@ interface Props {
   degrees: readonly Degree[]
   onSelect: (degree: Degree) => void
   onCheck: () => void
-  onNext: () => void
 }
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
 
-export function AnswerPanel({ session, degrees, onSelect, onCheck, onNext }: Props) {
+export function AnswerPanel({ session, degrees, onSelect, onCheck }: Props) {
   const checked = session.feedback !== null
   const enabled = session.phase === 'ready' && !checked
   return <section className="answer-panel card" aria-labelledby="answer-title">
@@ -31,9 +30,9 @@ export function AnswerPanel({ session, degrees, onSelect, onCheck, onNext }: Pro
     </div>
     <div className="answer-bottom">
       <div className={`answer-message ${checked ? session.feedback ? 'message-success' : 'message-incorrect' : ''}`} role="status" aria-live="polite">
-        {session.error ? <p className="audio-error">{session.error}</p> : checked && session.question ? <><span className="feedback-icon"><Icon name={session.feedback ? 'check' : 'music'} size={17} /></span><div><strong>{session.feedback ? 'Верно! Отличный слух.' : `Это ${session.question.degree}-я ступень. Попробуем ещё!`}</strong><p>{formatNote(session.question.note)}{session.feedback ? ' · Продолжайте в том же духе.' : ` · Ваш ответ: ${session.selected}`}</p></div></> : <p>{session.phase === 'playing' ? 'Сначала дослушайте обе ноты.' : !session.question || session.phase === 'idle' ? 'Нажмите «Слушать задание», чтобы начать.' : session.selected ? `Выбрана ${session.selected}-я ступень. Проверим?` : 'Выберите одну из доступных ступеней.'}</p>}
+        {session.error ? <p className="audio-error">{session.error}</p> : checked && session.question ? <><span className="feedback-icon"><Icon name={session.feedback ? 'check' : 'music'} size={17} /></span><div><strong>{session.feedback ? 'Верно! Отличный слух.' : `Это ${session.question.degree}-я ступень. Попробуем ещё!`}</strong><p>{formatNote(session.question.note)}{session.feedback ? ' · Продолжайте в том же духе.' : ` · Ваш ответ: ${session.selected}`}</p></div></> : <p>{session.phase === 'playing' ? 'Сначала дослушайте ступень.' : !session.question || session.phase === 'idle' ? 'Нажмите «Слушать», чтобы начать.' : session.selected ? `Выбрана ${session.selected}-я ступень. Проверим?` : 'Выберите одну из доступных ступеней.'}</p>}
       </div>
-      <button type="button" className="button button-check" disabled={checked ? session.phase === 'playing' : !enabled || !session.selected} onClick={checked ? onNext : onCheck}>{checked ? 'Дальше' : 'Проверить'}<Icon name={checked ? 'arrow' : 'check'} size={18} /></button>
+      {!checked && <button type="button" className="button button-check" disabled={!enabled || !session.selected} onClick={onCheck}>Проверить<Icon name="check" size={18} /></button>}
     </div>
   </section>
 }

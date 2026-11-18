@@ -24,11 +24,11 @@ export default function App() {
       </div>
       <div className="exercise-bar"><div><span className="exercise-number">01</span><h2>Ступени мажора</h2><span className="mode-badge">Базовое упражнение</span></div><div className="session-score" aria-label={`Результат сессии: ${session.correct} верных из ${session.total}`}><span className="score-dot" /><span>Верно <strong>{session.correct}<span> / {session.total}</span></strong></span></div></div>
       <div className="trainer-layout">
-        <SettingsPanel tonic={exercise.tonic} degrees={exercise.degrees} onTonicChange={exercise.changeTonic} onDegreeToggle={exercise.toggleDegree} onSelectAll={exercise.selectAll} />
-        <div className="training-area"><ListeningPanel session={session} audioPhase={exercise.audioPhase} keySymbol={currentKey.symbol} onListen={exercise.listen} onReplay={exercise.replay} /><AnswerPanel session={session} degrees={exercise.degrees} onSelect={exercise.selectAnswer} onCheck={exercise.checkAnswer} onNext={exercise.listen} /></div>
+        <SettingsPanel tonic={exercise.tonic} degrees={exercise.degrees} octaves={exercise.octaves} range={exercise.range} sound={exercise.sound} instrumentLoading={exercise.instrumentLoading} onTonicChange={exercise.changeTonic} onDegreeToggle={exercise.toggleDegree} onSelectAll={exercise.selectAll} onSoundChange={exercise.changeSound} onOctaveToggle={exercise.toggleOctave} />
+        <div className="training-area"><ListeningPanel session={session} audioPhase={exercise.audioPhase} keySymbol={currentKey.symbol} backgroundOn={exercise.backgroundOn} instrumentLoading={exercise.instrumentLoading} onListen={exercise.listen} onPrepare={exercise.prepareAudio} onListenHeld={exercise.listenHeld} onReleaseHeld={exercise.releaseHeldTarget} onStopBackground={exercise.stopBackground} /><AnswerPanel session={session} degrees={exercise.degrees} onSelect={exercise.selectAnswer} onCheck={exercise.checkAnswer} /></div>
       </div>
       <div className="practice-tip"><span className="tip-icon"><Icon name="sparkle" size={19} /></span><p><strong>Слух развивается с практикой.</strong> Уделите несколько спокойных минут знакомству со звучанием каждой ступени.</p><span className="tip-decoration" aria-hidden="true">♪</span></div>
     </main>
-    <footer><span>earlab<span className="brand-period">.</span> <span className="footer-separator">/</span> Ваша ежедневная музыкальная практика</span><span>Сделайте паузу. Прислушайтесь.</span></footer>
+    <footer><span>earlab<span className="brand-period">.</span> <span className="footer-separator">/</span> Ваша ежедневная музыкальная практика</span><a className="sample-credit" href={`${import.meta.env.BASE_URL}audio/piano/README.md`} target="_blank" rel="noreferrer">Пианино: Alexander Holm · CC BY 3.0</a></footer>
   </div>
 }

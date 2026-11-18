@@ -1,15 +1,23 @@
-import { DEGREES, MAJOR_KEYS, type Degree, type Tonic } from '../music/majorScale'
+import { DEGREES, MAJOR_KEYS, OCTAVE_REGISTERS, type Degree, type OctaveOffset, type Tonic } from '../music/majorScale'
 import { Icon } from './Icon'
+import { INSTRUMENT_SOUNDS, type InstrumentSound } from '../audio/sounds'
 
 interface Props {
   tonic: Tonic
   degrees: readonly Degree[]
+  octaves: readonly OctaveOffset[]
+  range: { lowest: string; highest: string }
+  sound: InstrumentSound
+  instrumentLoading: boolean
   onTonicChange: (tonic: Tonic) => void
   onDegreeToggle: (degree: Degree) => void
   onSelectAll: () => void
+  onSoundChange: (sound: InstrumentSound) => void
+  onOctaveToggle: (offset: OctaveOffset) => void
 }
 
-export function SettingsPanel({ tonic, degrees, onTonicChange, onDegreeToggle, onSelectAll }: Props) {
+export function SettingsPanel({ tonic, degrees, octaves, range, sound, instrumentLoading, onTonicChange, onDegreeToggle, onSelectAll, onSoundChange, onOctaveToggle }: Props) {
+  const selectedSound = INSTRUMENT_SOUNDS.find((value) => value.id === sound)!
   return <aside className="settings-panel card" aria-labelledby="settings-title">
     <div className="section-heading"><span className="eyebrow">ВАША ПРАКТИКА</span><span className="small-dot" /></div>
     <h2 id="settings-title">Настройте упражнение</h2>
@@ -21,7 +29,18 @@ export function SettingsPanel({ tonic, degrees, onTonicChange, onDegreeToggle, o
         </select>
         <Icon name="chevron" size={17} />
       </div>
-      <p className="field-hint">Мажорная гамма · одна октава</p>
+      <p className="field-hint">Мажорная гамма · ступени 1–7</p>
+    </div>
+    <div className="setting-field sound-setting">
+      <label htmlFor="instrument-sound">Звук ступени</label>
+      <div className="select-wrap">
+        <select id="instrument-sound" value={sound} onChange={(event) => onSoundChange(event.target.value as InstrumentSound)}>
+          {INSTRUMENT_SOUNDS.map((value) => <option key={value.id} value={value.id}>{value.label}</option>)}
+        </select>
+        <Icon name="chevron" size={17} />
+      </div>
+      <p className="field-hint" aria-live="polite">{instrumentLoading ? 'Загружаем пианино…' : selectedSound.description}</p>
+      <p className="field-hint">Тонический фон остаётся мягким и непрерывным.</p>
     </div>
     <fieldset className="degrees-field">
       <legend>Доступные ступени</legend>
@@ -35,7 +54,21 @@ export function SettingsPanel({ tonic, degrees, onTonicChange, onDegreeToggle, o
       <div className="degrees-meta"><span>Выбрано: {degrees.length} из 7</span><button type="button" className="text-button" disabled={degrees.length === 7} onClick={onSelectAll}>Выбрать все</button></div>
       <p className="field-hint">Оставьте хотя бы одну ступень. Начните с 1, 3 и 5, чтобы освоиться.</p>
     </fieldset>
-    <div className="instrument"><span className="instrument-icon"><Icon name="music" size={19} /></span><div><span className="instrument-name">Фортепиано</span><span className="instrument-detail">Мягкий синтезированный звук</span></div><span className="instrument-dot" /></div>
+    <fieldset className="degrees-field octave-field">
+      <legend>Октавы ступеней</legend>
+      <div className="octave-toggles">
+        {OCTAVE_REGISTERS.map((register) => <button key={register.offset} type="button"
+          className={`octave-toggle ${octaves.includes(register.offset) ? 'is-active' : ''}`}
+          aria-pressed={octaves.includes(register.offset)}
+          aria-label={`${register.label} октава`}
+          aria-disabled={octaves.length === 1 && octaves.includes(register.offset)}
+          onClick={() => onOctaveToggle(register.offset)}>
+          <span>{register.label}</span><small>{register.description}</small>
+        </button>)}
+      </div>
+      <p className="field-hint" aria-live="polite">Диапазон: {range.lowest}–{range.highest}</p>
+      <p className="field-hint">Номер ступени одинаков во всех октавах. Оставьте хотя бы одну.</p>
+    </fieldset>
     <div className="settings-note"><Icon name="headphones" size={19} /><p>В наушниках легче услышать каждую деталь.</p></div>
   </aside>
 }

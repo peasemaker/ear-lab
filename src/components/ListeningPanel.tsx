@@ -1,29 +1,46 @@
 import type { AudioPhase } from '../audio/piano'
 import type { Session } from '../music/session'
 import { Icon } from './Icon'
+import { ListenButton } from './ListenButton'
 
 interface Props {
   session: Session
   audioPhase: AudioPhase | null
   keySymbol: string
+  backgroundOn: boolean
+  instrumentLoading: boolean
   onListen: () => void
-  onReplay: () => void
+  onPrepare: () => void
+  onListenHeld: () => void
+  onReleaseHeld: () => void
+  onStopBackground: () => void
 }
 
 const WAVE_HEIGHTS = [12, 21, 15, 30, 44, 25, 53, 70, 43, 61, 84, 57, 97, 74, 110, 81, 60, 94, 68, 48, 73, 51, 32, 54, 37, 24, 33, 16, 22, 12]
 
-export function ListeningPanel({ session, audioPhase, keySymbol, onListen, onReplay }: Props) {
+export function ListeningPanel({ session, audioPhase, keySymbol, backgroundOn, instrumentLoading, onListen, onPrepare, onListenHeld, onReleaseHeld, onStopBackground }: Props) {
   const playing = session.phase === 'playing'
-  const status = playing
-    ? audioPhase === 'tonic' ? 'Звучит тоника' : audioPhase === 'target' ? 'Звучит случайная ступень' : 'Прислушайтесь…'
+  const status = instrumentLoading ? 'Загружаем пианино…' : playing
+    ? audioPhase === 'tonic' ? 'Тоника задаёт опору' : audioPhase === 'target' ? 'Звучит случайная ступень' : 'Прислушайтесь…'
     : session.feedback !== null ? 'Продолжим тренировку?' : session.phase === 'ready' ? 'Какая ступень прозвучала?' : 'Всё начинается с одной ноты'
-  const label = playing ? 'Звучит упражнение…' : session.feedback !== null ? 'Следующее задание' : session.question && session.phase === 'ready' ? 'Слушать ещё раз' : 'Слушать задание'
+  const label = instrumentLoading ? 'Загружаем пианино…' : playing ? 'Звучит упражнение…' : session.feedback !== null ? 'Следующее задание' : session.question ? 'Повторить' : 'Слушать'
+  const actionIcon = session.feedback !== null ? 'arrow' : session.question ? 'repeat' : 'play'
 
-  return <section className={`listening-panel ${playing ? 'is-playing' : ''}`} aria-labelledby="listening-title" aria-busy={playing}>
+  return <section className={`listening-panel ${playing ? 'is-playing' : ''}`} aria-labelledby="listening-title" aria-busy={playing || instrumentLoading}>
     <div className="listening-top"><span className="panel-label"><span className="live-dot" /> СЛУШАЙТЕ И ЧУВСТВУЙТЕ</span><span className="key-badge">{keySymbol} major</span></div>
     <div className="sound-visual" aria-hidden="true"><div className="sound-orbit orbit-one" /><div className="sound-orbit orbit-two" /><div className="waveform">{WAVE_HEIGHTS.map((height, i) => <span key={i} style={{ height: `${height}px`, animationDelay: `${i * -0.07}s` }} />)}</div></div>
-    <div className="listening-copy"><h2 id="listening-title" aria-live="polite">{status}</h2><p>Тоника задаёт опору. Следующая нота — ваша загадка.</p></div>
-    <div className="listen-actions"><button type="button" className="button button-primary" onClick={onListen} disabled={playing}><Icon name={session.feedback !== null && !playing ? 'arrow' : 'play'} size={16} />{label}</button><button type="button" className="replay-button" onClick={onReplay} disabled={!session.question || playing}><Icon name="repeat" size={17} />Повторить</button></div>
-    <div className="sound-sequence"><span className={audioPhase === 'tonic' ? 'sequence-active' : ''}>01 · Тоника</span><span className="sequence-line" /><span className={audioPhase === 'target' ? 'sequence-active' : ''}>02 · Ступень</span></div>
+    <div className="listening-copy"><h2 id="listening-title" aria-live="polite">{status}</h2><p>Тоника звучит на фоне, ступень — поверх неё.</p></div>
+    <div className="listen-actions">
+      <ListenButton className="button button-primary" disabled={playing || instrumentLoading} describedBy="listen-hint" onPrepare={onPrepare} onTap={onListen} onHold={onListenHeld} onRelease={onReleaseHeld}><Icon name={playing ? 'play' : actionIcon} size={16} />{label}</ListenButton>
+    </div>
+    <p id="listen-hint" className="hold-hint">Нажмите — 1 секунда. Удерживайте — до отпускания.</p>
+    <div className="background-control">
+      <button type="button" className={`background-button ${backgroundOn ? 'is-on' : ''}`} onClick={onStopBackground} disabled={!backgroundOn}>
+        <Icon name="volume" size={15} />
+        {backgroundOn ? 'Выключить тонический фон' : 'Тонический фон выключен'}
+        <span className="background-dot" aria-hidden="true" />
+      </button>
+      <p aria-live="polite">{backgroundOn ? 'Тоника звучит непрерывно, даже во время ответа' : 'Включится при нажатии «Слушать»'}</p>
+    </div>
   </section>
 }

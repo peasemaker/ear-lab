@@ -3,6 +3,14 @@ import { Note, Scale } from 'tonal'
 export const DEGREES = [1, 2, 3, 4, 5, 6, 7] as const
 export type Degree = (typeof DEGREES)[number]
 
+export const OCTAVE_REGISTERS = [
+  { offset: -1, label: 'Нижняя', description: '−1 октава' },
+  { offset: 0, label: 'Основная', description: 'Без сдвига' },
+  { offset: 1, label: 'Верхняя', description: '+1 октава' },
+] as const
+export type OctaveOffset = (typeof OCTAVE_REGISTERS)[number]['offset']
+export const OCTAVE_OFFSETS: readonly OctaveOffset[] = OCTAVE_REGISTERS.map((register) => register.offset)
+
 export const MAJOR_KEYS = [
   { tonic: 'C', label: 'До мажор', symbol: 'C' },
   { tonic: 'Db', label: 'Ре-бемоль мажор', symbol: 'D♭' },
@@ -26,19 +34,45 @@ export interface Question {
   degree: Degree
 }
 
-export function getMajorScale(tonic: Tonic): string[] {
-  return Scale.get(`${tonic}4 major`).notes
+export function getMajorScale(tonic: Tonic, octaveOffset: OctaveOffset = 0): string[] {
+  return Scale.get(`${tonic}${4 + octaveOffset} major`).notes
+}
+
+/** Place every tonic in F#2–F3, so C and B are adjacent in register. */
+export function getBackgroundTonic(tonic: Tonic): string {
+  const note = `${tonic}2`
+  const lowestBackgroundMidi = 42 // F#2; lower pitch classes move up an octave.
+  return Note.midi(note)! < lowestBackgroundMidi ? Note.transpose(note, '8P') : note
+}
+
+function getQuestionPool(
+  tonic: Tonic,
+  degrees: readonly Degree[],
+  octaves: readonly OctaveOffset[],
+): Question[] {
+  if (degrees.length === 0) throw new Error('Выберите хотя бы одну ступень.')
+  if (octaves.length === 0) throw new Error('Выберите хотя бы одну октаву.')
+  return octaves.flatMap((offset) => {
+    const notes = getMajorScale(tonic, offset)
+    return degrees.map((degree) => ({ tonic: notes[0], note: notes[degree - 1], degree }))
+  })
 }
 
 export function createQuestion(
   tonic: Tonic,
   degrees: readonly Degree[],
+  octaves: readonly OctaveOffset[] = OCTAVE_OFFSETS,
   random: () => number = Math.random,
 ): Question {
-  if (degrees.length === 0) throw new Error('Выберите хотя бы одну ступень.')
-  const degree = degrees[Math.floor(random() * degrees.length)]
-  const notes = getMajorScale(tonic)
-  return { tonic: notes[0], note: notes[degree - 1], degree }
+  const questions = getQuestionPool(tonic, degrees, octaves)
+  return questions[Math.floor(random() * questions.length)]
+}
+
+export function getExerciseRange(tonic: Tonic, degrees: readonly Degree[], octaves: readonly OctaveOffset[]) {
+  const notes = getQuestionPool(tonic, degrees, octaves)
+    .map((question) => question.note)
+    .sort((a, b) => Note.midi(a)! - Note.midi(b)!)
+  return { lowest: notes[0], highest: notes[notes.length - 1] }
 }
 
 const NOTE_NAMES: Record<string, string> = {
